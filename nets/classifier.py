@@ -66,18 +66,18 @@ class Resnet50RoIHead(nn.Module):
         #--------------------------------------#
         #   对ROIPooling后的的结果进行回归预测
         #--------------------------------------#
-        self.cls_loc = nn.Linear(2048, n_class * 4) # 边框回归
+        self.cls_loc = nn.Linear(2048, n_class * 4) # 边框回归，预测每个类别的位置调整
         #-----------------------------------#
         #   对ROIPooling后的的结果进行分类
         #-----------------------------------#
-        self.score = nn.Linear(2048, n_class) # 分类
+        self.score = nn.Linear(2048, n_class) # 分类：预测每个候选框的类别概率
         #-----------------------------------#
         #   权值初始化
         #-----------------------------------#
         normal_init(self.cls_loc, 0, 0.001)
         normal_init(self.score, 0, 0.01)
 
-        self.roi = RoIPool((roi_size, roi_size), spatial_scale)
+        self.roi = RoIPool((roi_size, roi_size), spatial_scale) # ROI Pooling：将不同大小的候选框统一到固定尺寸
 
     def forward(self, x, rois, roi_indices, img_size):
         # x是backbone提取的特征图，  rois是RPN给出的候选框，坐标是在原图尺寸上
@@ -88,9 +88,9 @@ class Resnet50RoIHead(nn.Module):
             rois = rois.cuda()
         rois        = torch.flatten(rois, 0, 1) # 扁平化RoI，按照第0维和第1维进行扁平化，也就是相乘
         roi_indices = torch.flatten(roi_indices, 0, 1) # 属于哪一个batch
-        # 例如 原本 [1, 300, 4] → [300, 4]
+        # 例如 原本 [1, 300, 4] → [300, 4]      bs,roi数量，4个坐标值
         # 例如 原本 [1, 300] → [300]
-        ##     映射到特征图上，如下
+        ##########################     映射到特征图上，如下  ##########################################
         rois_feature_map = torch.zeros_like(rois) # 创建和rois相同形状的全0张量
         rois_feature_map[:, [0,2]] = rois[:, [0,2]] / img_size[1] * x.size()[3]  #将原图坐标映射到特征图的位置
         rois_feature_map[:, [1,3]] = rois[:, [1,3]] / img_size[0] * x.size()[2]
@@ -132,7 +132,23 @@ from nets.resnet50 import resnet50
 from nets.rpn import RegionProposalNetwork
 
 if __name__ == "__main__":
-
+## 5. **整体工作流程图**
+"""
+候选框 (RPN输出)
+    ↓
+坐标变换 (原图→特征图)
+    ↓
+ROI Pooling (统一尺寸)
+    ↓
+特征提取 (ResNet后半部分)
+    ↓
+┌─────────────┬─────────────┐
+│  分类预测    │  回归预测    │
+│ roi_scores  │ roi_cls_locs│
+└─────────────┴─────────────┘
+    ↓
+最终检测结果
+"""
     # 1. 创建 backbone
     features, classifier = resnet50(pretrained=False)
     # print(features,classifier)
