@@ -219,7 +219,8 @@ class FasterRCNNTrainer(nn.Module):
     def _fast_rcnn_loc_loss(self, pred_loc, gt_loc, gt_label, sigma):
         pred_loc    = pred_loc[gt_label > 0]
         gt_loc      = gt_loc[gt_label > 0]
-
+        # Smooth L1 Loss             0.5 * σ² * x², if |x| < 1/σ²
+        #                            |x| - 0.5/σ² ,  otherwise
         sigma_squared = sigma ** 2
         regression_diff = (gt_loc - pred_loc)
         regression_diff = regression_diff.abs().float()
@@ -246,7 +247,10 @@ class FasterRCNNTrainer(nn.Module):
         #   利用rpn网络获得调整参数、得分、建议框、先验框
         # -------------------------------------------------- #
         rpn_locs, rpn_scores, rois, roi_indices, anchor = self.model_train(x = [base_feature, img_size], scale = scale, mode = 'rpn')
-        
+        # 训练RPN网络预测anchor box到proposal的位置调整
+        # 训练RPN网络区分前景(目标)和背景
+        # 训练分类头网络精确定位目标边界框，分类头预测的位置调整
+        # 训练分类头网络识别具体的目标类别，分类头预测的各类别得分
         rpn_loc_loss_all, rpn_cls_loss_all, roi_loc_loss_all, roi_cls_loss_all  = 0, 0, 0, 0
         sample_rois, sample_indexes, gt_roi_locs, gt_roi_labels                 = [], [], [], []
         for i in range(n):
