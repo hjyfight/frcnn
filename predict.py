@@ -3,7 +3,7 @@
 #   整合到了一个py文件中，通过指定mode进行模式的修改。
 #----------------------------------------------------#
 import time
-
+import os
 import cv2
 import numpy as np
 from PIL import Image
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     #   video_path、video_save_path和video_fps仅在mode='video'时有效
     #   保存视频时需要ctrl+c退出或者运行到最后一帧才会完成完整的保存步骤。
     #----------------------------------------------------------------------------------------------------------#
-    video_path      = 0
+    video_path      = r"C:\Users\hjy\Downloads\test_1.mp4"
     video_save_path = ""
     video_fps       = 25.0
     #----------------------------------------------------------------------------------------------------------#
@@ -68,6 +68,10 @@ if __name__ == "__main__":
         5、如果想要在预测图上写额外的字，比如检测到的特定目标的数量，可以进入frcnn.detect_image函数，在绘图部分对predicted_class进行判断，
         比如判断if predicted_class == 'car': 即可判断当前目标是否为车，然后记录数量即可。利用draw.text即可写字。
         '''
+        output_dir = "predict_results/"
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
         while True:
             img = input('Input image filename:')
             try:
@@ -78,6 +82,13 @@ if __name__ == "__main__":
             else:
                 r_image = frcnn.detect_image(image, crop = crop, count = count)
                 r_image.show()
+                
+            # 添加保存功能
+
+            base_name = os.path.splitext(os.path.basename(img))[0]
+            save_path = os.path.join(output_dir, f"detected_{base_name}.jpg")
+            r_image.save(save_path, quality=95)
+            print(f'Result automatically saved as: {save_path}')
 
     elif mode == "video":
         capture=cv2.VideoCapture(video_path)
