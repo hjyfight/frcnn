@@ -194,7 +194,7 @@ def normal_init(m, mean, stddev, truncated=False):# 卷积层初始化
 
 if __name__ == "__main__":
     import torch
-    from rpn import RegionProposalNetwork  # 假设 rpn.py 中定义了 RPN
+    from rpn import RegionProposalNetwork  
     from utils.anchors import generate_anchor_base, _enumerate_shifted_anchor
 
     # 1. 模拟 backbone 输出特征图
@@ -227,7 +227,7 @@ if __name__ == "__main__":
 
     # 生成 anchors
     anchor_base = generate_anchor_base()
-    anchors = _enumerate_shifted_anchor(anchor_base, rpn.feat_stride, H, W)  # <== 打断点
+    anchors = _enumerate_shifted_anchor(anchor_base, rpn.feat_stride, H, W)  
 
     # proposals
     rois_list, roi_indices_list = [], []
@@ -236,8 +236,8 @@ if __name__ == "__main__":
         rois_list.append(rois.unsqueeze(0))
         roi_indices_list.append(torch.ones((len(rois),), dtype=torch.float32).unsqueeze(0))
 
-    rois = torch.cat(rois_list, dim=0)  # <== 打断点
-    roi_indices = torch.cat(roi_indices_list, dim=0)  # <== 打断点
+    rois = torch.cat(rois_list, dim=0) 
+    roi_indices = torch.cat(roi_indices_list, dim=0) 
 
     _ = x_conv1, rpn_locs, rpn_scores, rpn_fg_scores, anchors, rois, roi_indices
 
